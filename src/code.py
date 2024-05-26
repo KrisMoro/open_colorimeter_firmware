@@ -9,3 +9,5 @@ splash_screen.show()
 #colorimeter = Colorimeter()
 #colorimeter.run()
 
+while True:
+    pass    
