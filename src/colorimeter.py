@@ -3,8 +3,9 @@ import ulab
 import board
 import analogio
 import digitalio
-import gamepadshift
+import keypadio
 import constants
+from display_hut import display
 import adafruit_itertools
 
 from light_sensor import LightSensor
@@ -48,7 +49,7 @@ class Colorimeter:
 
 
         # Create screens
-        board.DISPLAY.brightness = 1.0
+        display.brightness = 1.0
         self.measure_screen = MeasureScreen()
         self.message_screen = MessageScreen()
         self.menu_screen = MenuScreen()
