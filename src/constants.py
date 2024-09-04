@@ -12,8 +12,7 @@ LOOP_DT = 0.1
 BLANK_DT = 0.05
 DEBOUNCE_DT = 0.6 
 NUM_BLANK_SAMPLES = 50 
-BATTERY_AIN_PIN = board.A3
-
+BATTERY_AIN_PIN = board.A6
 
 BUTTON = { 
         'none'  : 0b00000000,

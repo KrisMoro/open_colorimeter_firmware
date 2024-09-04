@@ -1,7 +1,7 @@
 import board
 import displayio
 import constants
-from display_hut import display
+
 class SplashScreen:
 
     def __init__(self):
@@ -15,5 +15,4 @@ class SplashScreen:
         self.group.append(self.tile_grid)
 
     def show(self):
-        display.root_group=self.group
-    
+        board.DISPLAY.root_group = self.group

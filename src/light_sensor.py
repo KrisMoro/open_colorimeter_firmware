@@ -14,7 +14,7 @@ class LightSensor:
     def __init__(self):
 
         # Set up light sensor
-        i2c = busio.I2C(board.GP1, board.GP0)
+        i2c = busio.I2C(board.SCL, board.SDA)
         try:
             self._device = adafruit_tsl2591.TSL2591(i2c)
         except ValueError as error:
