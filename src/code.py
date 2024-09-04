@@ -5,9 +5,9 @@ splash_screen = SplashScreen()
 splash_screen.show()
 
 # type: ignore # Import and start colorimeter
-#from colorimeter import Colorimeter 
-#colorimeter = Colorimeter()
-#colorimeter.run()
+from colorimeter import Colorimeter 
+colorimeter = Colorimeter()
+colorimeter.run()
 
 while True:
     pass    

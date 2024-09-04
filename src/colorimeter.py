@@ -3,7 +3,8 @@ import ulab
 import board
 import analogio
 import digitalio
-import keypadio
+import keypad
+from keymap import keymap
 import constants
 from display_hut import display
 import adafruit_itertools
@@ -49,18 +50,14 @@ class Colorimeter:
 
 
         # Create screens
-        display.brightness = 1.0
+        #display.brightness = 1.0
         self.measure_screen = MeasureScreen()
         self.message_screen = MessageScreen()
         self.menu_screen = MenuScreen()
 
         # Setup gamepad inputs - change this (Keypad shift??)
         self.last_button_press = time.monotonic()
-        self.pad = gamepadshift.GamePadShift(
-                digitalio.DigitalInOut(board.BUTTON_CLOCK), 
-                digitalio.DigitalInOut(board.BUTTON_OUT),
-                digitalio.DigitalInOut(board.BUTTON_LATCH),
-                )
+        self.pad = keypad.Keys(list(keymap.values()), value_when_pressed=False, pull=True)
 
         # Load Configuration
         self.configuration = Configuration()
@@ -216,7 +213,7 @@ class Colorimeter:
                         self.absorbance
                         )
             except CalibrationsError as error:
-                self.message_screen.set_message(error_message)
+                self.message_screen.set_message(error.error_message)
                 self.message_screen.set_to_error()
                 self.measurement_name = 'Absorbance'
                 self.mode = Mode.MESSAGE
@@ -266,7 +263,7 @@ class Colorimeter:
             return False
 
     def handle_button_press(self):
-        buttons = self.pad.get_pressed()
+        buttons = self.pad.events.get()
         if not buttons:
             # No buttons pressed
             return 

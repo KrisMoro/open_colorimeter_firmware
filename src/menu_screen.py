@@ -22,8 +22,8 @@ class MenuScreen:
 
         # Create tile grid
         self.bitmap = displayio.Bitmap( 
-                board.DISPLAY.width, 
-                board.DISPLAY.height, 
+                display.width, 
+                display.height, 
                 len(constants.COLOR_TO_RGB)
                 )
         self.bitmap.fill(self.color_to_index['black'])
@@ -33,20 +33,20 @@ class MenuScreen:
         # Create header text label
         header_str = 'Menu'
         self.header_label = label.Label(
-                fonts.font_14pt, 
+                terminalio.FONT, 
                 text = header_str, 
                 color = constants.COLOR_TO_RGB['white'], 
                 scale = font_scale,
                 anchor_point = (0.5, 1.0)
                 )
-        header_x = board.DISPLAY.width//2 
+        header_x = display.width//2 
         header_y = self.header_label.bounding_box[3] + self.PADDING_HEADER 
         self.header_label.anchored_position = header_x, header_y
 
         # Create line under menu
         menu_line_x0 = 0
         menu_line_y0 = header_y + self.PADDING_HEADER 
-        menu_line_x1 = board.DISPLAY.width
+        menu_line_x1 = display.width
         menu_line_y1 = menu_line_y0
         self.menu_line = line.Line(
                 menu_line_x0, 
@@ -57,8 +57,8 @@ class MenuScreen:
                 )
 
         # Test populate some items
-        vert_pix_remaining = board.DISPLAY.height - (menu_line_y1 + 1)
-        test_label = label.Label(fonts.font_10pt, text='test',scale=font_scale)
+        vert_pix_remaining = display.height - (menu_line_y1 + 1)
+        test_label = label.Label(terminalio.FONT, text='test',scale=font_scale)
         label_dy = test_label.bounding_box[3] + self.PADDING_ITEM
         self.items_per_screen = vert_pix_remaining//label_dy
 
@@ -67,7 +67,7 @@ class MenuScreen:
             pos_x = 2
             pos_y = menu_line_y0 + (i+1)*label_dy 
             label_tmp = label.Label(
-                     fonts.font_10pt,
+                     terminalio.FONT,
                      text = '',
                      color = constants.COLOR_TO_RGB['white'],
                      scale = font_scale,
@@ -100,4 +100,4 @@ class MenuScreen:
                 item_label.background_color = constants.COLOR_TO_RGB['black']
 
     def show(self):
-        board.DISPLAY.show(self.group)
+        display.root_group=self.group

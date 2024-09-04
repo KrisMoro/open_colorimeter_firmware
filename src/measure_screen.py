@@ -1,7 +1,9 @@
 import board
 import displayio
 import constants
-import fonts
+import terminalio
+#import fonts
+from display_hut import display
 from adafruit_display_text import label
 
 
@@ -26,8 +28,8 @@ class MeasureScreen:
 
         # Create tile grid
         self.bitmap = displayio.Bitmap( 
-                board.DISPLAY.width, 
-                board.DISPLAY.height, 
+                display.width, 
+                display.height, 
                 len(constants.COLOR_TO_RGB)
                 )
         self.bitmap.fill(self.color_to_index['black'])
@@ -38,14 +40,14 @@ class MeasureScreen:
         header_str = 'Absorbance'
         text_color = constants.COLOR_TO_RGB['white']
         self.header_label = label.Label(
-                fonts.font_14pt, 
+                terminalio.FONT, 
                 text = header_str, 
                 color = text_color, 
                 scale = font_scale,
                 anchor_point = (0.5, 1.0),
                 )
         bbox = self.header_label.bounding_box
-        header_label_x = board.DISPLAY.width//2 
+        header_label_x = display.width//2 
         header_label_y = bbox[3] + self.HEADER_LABEL_Y_SPACING
         self.header_label.anchored_position = (header_label_x, header_label_y)
 
@@ -54,14 +56,14 @@ class MeasureScreen:
         value_str = f'{dummy_value:1.2f}'.replace('0','O')
         text_color = constants.COLOR_TO_RGB['white']
         self.value_label = label.Label(
-                fonts.font_14pt, 
+                terminalio.FONT, 
                 text = value_str, 
                 color = text_color, 
                 scale = font_scale,
                 anchor_point = (0.5,1.0),
                 )
         bbox = self.value_label.bounding_box
-        value_label_x = board.DISPLAY.width//2
+        value_label_x = display.width//2
         value_label_y = header_label_y + bbox[3] + self.VALUE_LABEL_Y_SPACING
         self.value_label.anchored_position = (value_label_x, value_label_y)
         
@@ -70,14 +72,14 @@ class MeasureScreen:
         blank_str = 'initializing' 
         text_color = constants.COLOR_TO_RGB['orange']
         self.blank_label = label.Label(
-                fonts.font_10pt, 
+                terminalio.FONT, 
                 text=blank_str, 
                 color=text_color, 
                 scale=font_scale,
                 anchor_point = (0.5,1.0),
                 )
         bbox = self.blank_label.bounding_box
-        blank_label_x = board.DISPLAY.width//2 
+        blank_label_x = display.width//2 
         blank_label_y = value_label_y + bbox[3] + self.BLANK_LABEL_Y_SPACING 
         self.blank_label.anchored_position = (blank_label_x, blank_label_y)
 
@@ -86,7 +88,7 @@ class MeasureScreen:
         gain_str = 'gain xxx' 
         text_color = constants.COLOR_TO_RGB['orange']
         self.gain_label = label.Label(
-                fonts.font_10pt, 
+                terminalio.FONT, 
                 text=gain_str, 
                 color=text_color, 
                 scale=font_scale,
@@ -103,7 +105,7 @@ class MeasureScreen:
         itime_str = 'time xxxms' 
         text_color = constants.COLOR_TO_RGB['orange']
         self.itime_label = label.Label(
-                fonts.font_10pt, 
+                terminalio.FONT, 
                 text=itime_str, 
                 color=text_color, 
                 scale=font_scale,
@@ -121,14 +123,14 @@ class MeasureScreen:
         bat_str = 'battery 0.0V'
         text_color = constants.COLOR_TO_RGB['gray']
         self.bat_label = label.Label(
-                fonts.font_10pt, 
+                terminalio.FONT, 
                 text = bat_str, 
                 color = text_color, 
                 scale = font_scale,
                 anchor_point = (0.5,1.0),
                 )
         bbox = self.bat_label.bounding_box
-        bat_label_x = board.DISPLAY.width//2 
+        bat_label_x = display.width//2 
         bat_label_y = blank_label_y + bbox[3] + self.BATTERY_LABEL_Y_SPACING 
         self.bat_label.anchored_position = (bat_label_x, bat_label_y)
         
@@ -197,5 +199,5 @@ class MeasureScreen:
         self.bat_label.text = f'battery {value:1.1f}V'
 
     def show(self):
-        board.DISPLAY.show(self.group)
+        display.root_group=self.group
 

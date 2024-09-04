@@ -1,7 +1,9 @@
 import board
 import displayio
 import constants
-import fonts
+import terminalio
+from display_hut import display 
+#import fonts
 from adafruit_display_text import label
 from adafruit_display_text import wrap_text_to_lines 
 
@@ -24,8 +26,8 @@ class MessageScreen:
 
         # Create tile grid
         self.bitmap = displayio.Bitmap( 
-                board.DISPLAY.width, 
-                board.DISPLAY.height, 
+                display.width, 
+                display.height, 
                 len(constants.COLOR_TO_RGB)
                 )
         self.bitmap.fill(self.color_to_index['black'])
@@ -36,14 +38,14 @@ class MessageScreen:
         header_str = 'MESSAGE'
         text_color = constants.COLOR_TO_RGB['white']
         self.header_label = label.Label(
-                fonts.font_14pt, 
+                terminalio.FONT, 
                 text = header_str, 
                 color = text_color, 
                 scale = font_scale,
                 anchor_point = (0.5, 1.0),
                 )
         bbox = self.header_label.bounding_box
-        header_label_x = board.DISPLAY.width//2 
+        header_label_x = display.width//2 
         header_label_y = bbox[3] + self.SPACING_HEADER_LABEL
         self.header_label.anchored_position = (header_label_x, header_label_y)
 
@@ -54,14 +56,14 @@ class MessageScreen:
             message_str = ' '*self.MESSAGE_MAX_CHARS
             text_color = constants.COLOR_TO_RGB['orange']
             message_label = label.Label(
-                    fonts.font_10pt, 
+                    terminalio.FONT, 
                     text = message_str, 
                     color = text_color, 
                     scale = font_scale,
                     anchor_point = (0.5,1.0),
                     )
             bbox = message_label.bounding_box
-            message_label_x = board.DISPLAY.width//2
+            message_label_x = display.width//2
             message_label_y += self.HEIGHT_MESSAGE_LABEL + self.SPACING_MESSAGE_LABEL 
             message_label.anchored_position = (message_label_x, message_label_y)
             self.message_label_list.append(message_label)
@@ -95,5 +97,5 @@ class MessageScreen:
         self.header_label.text = 'About'
 
     def show(self):
-        board.DISPLAY.show(self.group)
+        display.show(self.group)
 

@@ -11,7 +11,7 @@ foreach ($file in $files) {
 
 
 # Get all Python files in the current folder and its subfolders
-$pythonFiles = Get-ChildItem -Path . -Filter "*.*py" -Recurse
+$pythonFiles = Get-ChildItem -Path ".\src" -Filter "*.*py" -Recurse
 
 # Copy each Python file and its parent directory structure to the volume
 foreach ($file in $pythonFiles) {
