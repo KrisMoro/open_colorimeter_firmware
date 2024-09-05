@@ -14,6 +14,15 @@ DEBOUNCE_DT = 0.6
 NUM_BLANK_SAMPLES = 50 
 BATTERY_AIN_PIN = board.A6
 
+BUTTON_LEFT = 7  # LEFT button
+BUTTON_UP = 6  # UP button
+BUTTON_DOWN = 5  # DOWN button
+BUTTON_RIGHT = 4  # RIGHT button
+BUTTON_MENU = 3  # SELECT button
+BUTTON_BLANK = 2  # START button
+BUTTON_ITIME = 1  # button A
+BUTTON_GAIN = 0  # button B
+
 BUTTON = { 
         'none'  : 0b00000000,
         'left'  : 0b10000000,

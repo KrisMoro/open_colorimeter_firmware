@@ -236,93 +236,63 @@ class Colorimeter:
         if set_blanked:
             self.is_blanked = True
 
-    def blank_button_pressed(self, buttons):  
-        if self.is_raw_sensor:
-            return False
-        else:
-            return buttons & constants.BUTTON['blank']
-
-    def menu_button_pressed(self, buttons): 
-        return buttons & constants.BUTTON['menu']
-
-    def up_button_pressed(self, buttons):
-        return buttons & constants.BUTTON['up']
-
-    def down_button_pressed(self, buttons):
-        return buttons & constants.BUTTON['down']
-
-    def right_button_pressed(self, buttons):
-        return buttons & constants.BUTTON['right']
-
-    def gain_button_pressed(self, buttons):
-        if self.is_raw_sensor:
-            return buttons & constants.BUTTON['gain']
-        else:
-            return False
-
-    def itime_button_pressed(self, buttons):
-        if self.is_raw_sensor:
-            return buttons & constants.BUTTON['itime']
-        else:
-            return False
 
     def handle_button_press(self):
-        buttons = self.pad.get_pressed()
-        if not buttons:
-            # No buttons pressed
-            return 
-        if not self.check_debounce():
-            # Still within debounce timeout
-            return  
+        buttons = self.pad.events.get()
+        if buttons and buttons.pressed:
+            
+            if not self.check_debounce():
+                # Still within debounce timeout
+                return  
 
-        # Get time of last button press for debounce check
-        self.last_button_press = time.monotonic()
+            # Get time of last button press for debounce check
+            self.last_button_press = time.monotonic()
 
-        # Update state of system based on buttons pressed.
-        # This is different for each operating mode. 
-        if self.mode == Mode.MEASURE:
-            if self.blank_button_pressed(buttons):
-                self.measure_screen.set_blanking()
-                self.blank_sensor()
-            elif self.menu_button_pressed(buttons):
-                self.mode = Mode.MENU
-                self.menu_view_pos = 0
-                self.menu_item_pos = 0
+            # Update state of system based on buttons pressed.
+            # This is different for each operating mode. 
+            if self.mode == Mode.MEASURE:
+                if buttons.key_number == constants.BUTTON_BLANK:
+                    self.measure_screen.set_blanking()
+                    self.blank_sensor()
+                elif buttons.key_number == constants.BUTTON_MENU:
+                    self.mode = Mode.MENU
+                    self.menu_view_pos = 0
+                    self.menu_item_pos = 0
+                    self.update_menu_screen()
+                elif buttons.key_number == constants.BUTTON_GAIN:
+                    self.light_sensor.gain = next(self.gain_cycle)
+                    self.is_blanked = False
+                elif buttons.key_number == constants.BUTTON_ITIME:
+                    self.light_sensor.integration_time = next(self.itime_cycle)
+                    self.is_blanked = False
+
+            elif self.mode == Mode.MENU:
+                if buttons.key_number == constants.BUTTON_MENU:
+                    self.mode = Mode.MEASURE
+                elif buttons.key_number == constants.BUTTON_UP: 
+                    self.decr_menu_item_pos()
+                elif buttons.key_number == constants.BUTTON_DOWN: 
+                    self.incr_menu_item_pos()
+                elif buttons.key_number == constants.BUTTON_RIGHT: 
+                    selected_item = self.menu_items[self.menu_item_pos]
+                    if selected_item == self.ABOUT_STR:
+                        about_msg = f'firmware version {constants.__version__}'
+                        self.message_screen.set_message(about_msg) 
+                        self.message_screen.set_to_about()
+                        self.mode = Mode.MESSAGE
+                    else:
+                        self.measurement_name = self.menu_items[self.menu_item_pos]
+                        self.mode = Mode.MEASURE
                 self.update_menu_screen()
-            elif self.gain_button_pressed(buttons):
-                self.light_sensor.gain = next(self.gain_cycle)
-                self.is_blanked = False
-            elif self.itime_button_pressed(buttons):
-                self.light_sensor.integration_time = next(self.itime_cycle)
-                self.is_blanked = False
 
-        elif self.mode == Mode.MENU:
-            if self.menu_button_pressed(buttons):
-                self.mode = Mode.MEASURE
-            elif self.up_button_pressed(buttons): 
-                self.decr_menu_item_pos()
-            elif self.down_button_pressed(buttons): 
-                self.incr_menu_item_pos()
-            elif self.right_button_pressed(buttons): 
-                selected_item = self.menu_items[self.menu_item_pos]
-                if selected_item == self.ABOUT_STR:
-                    about_msg = f'firmware version {constants.__version__}'
-                    self.message_screen.set_message(about_msg) 
-                    self.message_screen.set_to_about()
+            elif self.mode == Mode.MESSAGE:
+                if self.calibrations.has_errors:
+                    error_msg = self.calibrations.pop_error()
+                    self.message_screen.set_message(error_msg)
+                    self.message_screen.set_to_error()
                     self.mode = Mode.MESSAGE
                 else:
-                    self.measurement_name = self.menu_items[self.menu_item_pos]
                     self.mode = Mode.MEASURE
-            self.update_menu_screen()
-
-        elif self.mode == Mode.MESSAGE:
-            if self.calibrations.has_errors:
-                error_msg = self.calibrations.pop_error()
-                self.message_screen.set_message(error_msg)
-                self.message_screen.set_to_error()
-                self.mode = Mode.MESSAGE
-            else:
-                self.mode = Mode.MEASURE
 
     def check_debounce(self):
         button_dt = time.monotonic() - self.last_button_press
@@ -336,7 +306,7 @@ class Colorimeter:
         while True:
 
             # Deal with any button presses
-            #self.handle_button_press()
+            self.handle_button_press()
             #TODO: Fix this with info from https://github.com/adafruit/Adafruit_Learning_System_Guides/blob/main/PyGamer_Improved_Thermal_Camera/code.py
             
 
