@@ -3,7 +3,7 @@ import ulab
 import board
 import analogio
 import digitalio
-import gamepadshift
+from keypad import ShiftRegisterKeys
 import constants
 import adafruit_itertools
 
@@ -55,10 +55,12 @@ class Colorimeter:
 
         # Setup gamepad inputs - change this (Keypad shift??)
         self.last_button_press = time.monotonic()
-        self.pad = gamepadshift.GamePadShift(
-                digitalio.DigitalInOut(board.BUTTON_CLOCK), 
-                digitalio.DigitalInOut(board.BUTTON_OUT),
-                digitalio.DigitalInOut(board.BUTTON_LATCH),
+        self.pad = ShiftRegisterKeys(
+                clock = board.BUTTON_CLOCK, 
+                data = board.BUTTON_OUT,
+                latch = board.BUTTON_LATCH,
+                key_count=8,
+                value_when_pressed=True
                 )
 
         # Load Configuration
@@ -330,11 +332,13 @@ class Colorimeter:
             return True
 
     def run(self):
-
+        self.pad.events.clear()
         while True:
 
             # Deal with any button presses
-            self.handle_button_press()
+            #self.handle_button_press()
+            #TODO: Fix this with info from https://github.com/adafruit/Adafruit_Learning_System_Guides/blob/main/PyGamer_Improved_Thermal_Camera/code.py
+            
 
             # Update display based on the current operating mode
             if self.mode == Mode.MEASURE:
