@@ -45,6 +45,19 @@ COLOR_TO_RGB = collections.OrderedDict([
     ('orange' , 0xffb447),
     ])
 
+LIGHT_SOURCE  = collections.OrderedDict([
+        ('red', board.D10),
+        ('green', board.D11),
+        ('blue', board.D12)
+]) 
+
+NEOPIXEL_COLORS = collections.OrderedDict([
+        ('all'  , (255,255,255)),
+        ('red'  , (255,0,0)),
+        ('green', (0,255,0)),
+        ('blue' , (0,0,255))
+])
+
 STR_TO_GAIN = collections.OrderedDict([
         ('low'  , adafruit_tsl2591.GAIN_LOW ),
         ('med'  , adafruit_tsl2591.GAIN_MED ),

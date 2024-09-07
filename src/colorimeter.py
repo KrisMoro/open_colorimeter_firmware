@@ -6,6 +6,8 @@ import digitalio
 from keypad import ShiftRegisterKeys
 import constants
 import adafruit_itertools
+import neopixel
+import collections
 
 from light_sensor import LightSensor
 from light_sensor import LightSensorOverflow
@@ -44,7 +46,12 @@ class Colorimeter:
         self.menu_item_pos = 0
         self.mode = Mode.MEASURE
         self.is_blanked = False
-        self.blank_value = 1.0
+        self.blank_values = collections.OrderedDict([
+            ("all", 1.0),
+            ("red", 1.0),
+            ("green", 1.0),
+            ("blue", 1.0)
+        ])
 
 
         # Create screens
@@ -62,7 +69,20 @@ class Colorimeter:
                 key_count=8,
                 value_when_pressed=True
                 )
+        
+        #init neopixel
+        self.num_pixels = 5
+        self.pixels = neopixel.NeoPixel(board.NEOPIXEL, self.num_pixels, brightness=0.5, auto_write=True)
+        self.pixels.brightness = 0.1
 
+
+        #setup light source
+        #soutces will be "all", "red", "green", "blue"
+        self.light = "all"
+        self.light_sources = {}
+        self.init_light_sources()   
+        self.activate_light_source(self.light)
+        
         # Load Configuration
         self.configuration = Configuration()
         try:
@@ -135,6 +155,38 @@ class Colorimeter:
             while next(self.itime_cycle) != self.configuration.integration_time:
                 continue
 
+    def init_light_sources(self):
+        for source in constants.LIGHT_SOURCE:
+                self.light_sources[source] = digitalio.DigitalInOut(constants.LIGHT_SOURCE[source])
+                self.light_sources[source].direction = digitalio.Direction.OUTPUT
+                self.light_sources[source].value = False
+
+    def activate_light_source(self, source_requested:str):
+        print(self.light_sources)
+        print("Light source requested:", source_requested)
+        for source in constants.LIGHT_SOURCE:
+                self.light_sources[source].value = False
+                print("Light source:", source, "Object ID:", id(self.light_sources[source]), False)
+        if source_requested == "all":
+            for source in constants.LIGHT_SOURCE:
+                self.light_sources[source].value = True
+                print("Light source:", source, "Object ID:", id(self.light_sources[source]))
+        else:
+            self.light_sources[source_requested].value = True
+            print("Light source:", source_requested, "Object ID:", id(self.light_sources[source_requested]))
+        self.pixels[2] = constants.NEOPIXEL_COLORS[source_requested]
+    
+    def activate_next_light_source(self):
+        if self.light == "all":
+            self.light = "red"
+        elif self.light == "red":
+            self.light = "green"
+        elif self.light == "green":
+            self.light = "blue"
+        elif self.light == "blue":
+            self.light = "all"
+        self.activate_light_source(self.light)
+    
     @property
     def num_menu_items(self):
         return len(self.menu_items)
@@ -193,7 +245,7 @@ class Colorimeter:
 
     @property
     def transmittance(self):
-        transmittance = float(self.raw_sensor_value)/self.blank_value
+        transmittance = float(self.raw_sensor_value)/self.blank_values[self.light]
         return transmittance
 
     @property
@@ -224,22 +276,24 @@ class Colorimeter:
         return value
 
     def blank_sensor(self, set_blanked=True):
-        blank_samples = ulab.numpy.zeros((constants.NUM_BLANK_SAMPLES,))
-        for i in range(constants.NUM_BLANK_SAMPLES):
-            try:
-                value = self.raw_sensor_value
-            except LightSensorOverflow:
-                value = self.light_sensor.max_counts
-            blank_samples[i] = value
-            time.sleep(constants.BLANK_DT)
-        self.blank_value = ulab.numpy.median(blank_samples)
-        if set_blanked:
-            self.is_blanked = True
+        for source in constants.NEOPIXEL_COLORS:
+            self.activate_light_source(source)
+            blank_samples = ulab.numpy.zeros((constants.NUM_BLANK_SAMPLES,))
+            for i in range(constants.NUM_BLANK_SAMPLES):
+                try:
+                    value = self.raw_sensor_value
+                except LightSensorOverflow:
+                    value = self.light_sensor.max_counts
+                blank_samples[i] = value
+                time.sleep(constants.BLANK_DT)
+            self.blank_values[source] = ulab.numpy.median(blank_samples)
+            if set_blanked:
+                self.is_blanked = True
 
 
     def handle_button_press(self):
         buttons = self.pad.events.get()
-        if buttons and buttons.pressed:
+        if buttons and buttons.pressed:            
             
             if not self.check_debounce():
                 # Still within debounce timeout
@@ -250,6 +304,8 @@ class Colorimeter:
 
             # Update state of system based on buttons pressed.
             # This is different for each operating mode. 
+            if buttons.key_number == constants.BUTTON_LEFT:
+                self.activate_next_light_source()
             if self.mode == Mode.MEASURE:
                 if buttons.key_number == constants.BUTTON_BLANK:
                     self.measure_screen.set_blanking()
@@ -300,7 +356,7 @@ class Colorimeter:
             return False
         else:
             return True
-
+   
     def run(self):
         self.pad.events.clear()
         while True:
