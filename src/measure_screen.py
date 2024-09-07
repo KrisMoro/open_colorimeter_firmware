@@ -38,7 +38,7 @@ class MeasureScreen:
         header_str = 'Absorbance'
         text_color = constants.COLOR_TO_RGB['white']
         self.header_label = label.Label(
-                fonts.font_14pt, 
+                fonts.font_10pt, 
                 text = header_str, 
                 color = text_color, 
                 scale = font_scale,
@@ -54,7 +54,7 @@ class MeasureScreen:
         value_str = f'{dummy_value:1.2f}'.replace('0','O')
         text_color = constants.COLOR_TO_RGB['white']
         self.value_label = label.Label(
-                fonts.font_14pt, 
+                fonts.font_10pt, 
                 text = value_str, 
                 color = text_color, 
                 scale = font_scale,

@@ -143,6 +143,7 @@ class Colorimeter:
         # Setup up battery monitoring settings cycles 
         self.battery_monitor = BatteryMonitor()
         self.setup_gain_and_itime_cycles()
+        
 
     def setup_gain_and_itime_cycles(self):
         self.gain_cycle = adafruit_itertools.cycle(constants.GAIN_TO_STR) 
@@ -162,18 +163,14 @@ class Colorimeter:
                 self.light_sources[source].value = False
 
     def activate_light_source(self, source_requested:str):
-        print(self.light_sources)
         print("Light source requested:", source_requested)
         for source in constants.LIGHT_SOURCE:
                 self.light_sources[source].value = False
-                print("Light source:", source, "Object ID:", id(self.light_sources[source]), False)
         if source_requested == "all":
             for source in constants.LIGHT_SOURCE:
                 self.light_sources[source].value = True
-                print("Light source:", source, "Object ID:", id(self.light_sources[source]))
         else:
             self.light_sources[source_requested].value = True
-            print("Light source:", source_requested, "Object ID:", id(self.light_sources[source_requested]))
         self.pixels[2] = constants.NEOPIXEL_COLORS[source_requested]
     
     def activate_next_light_source(self):
