@@ -107,6 +107,13 @@ class Calibrations(JsonSettingsFile):
         except KeyError:
             led = None
         return led
+    
+    def channel(self, name):
+        try:
+            channel = self.data[name]['channel']
+        except KeyError:
+            channel = None
+        return channel
 
     def units(self, name):
         try:

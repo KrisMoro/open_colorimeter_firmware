@@ -341,8 +341,9 @@ class Colorimeter:
                     self.light_sensor.gain = next(self.gain_cycle)
                     self.is_blanked = False
                 elif buttons.key_number == constants.BUTTON_ITIME:
-                    self.light_sensor.integration_time = next(self.itime_cycle)
-                    self.is_blanked = False
+                    pass
+                    #self.light_sensor.integration_time = next(self.itime_cycle)
+                    #self.is_blanked = False
 
             elif self.mode == Mode.MENU:
                 if buttons.key_number == constants.BUTTON_MENU:

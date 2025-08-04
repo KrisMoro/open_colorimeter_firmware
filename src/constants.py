@@ -87,4 +87,9 @@ CHANNEL_TO_STR = \
         
 NUM_CHANNEL = len(STR_TO_CHANNEL)
 
+LIGHT_SOURCE  = collections.OrderedDict([
+        ('red', board.D10),
+        ('green', board.D11),
+        ('blue', board.D12)
+]) 
 

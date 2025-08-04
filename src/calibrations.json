@@ -2,6 +2,7 @@
     "Ammonia API": {
       "units": "ppm",
       "led": "630",
+      "channel": 6,
       "fit_type": "polynomial",
       "fit_coef": [
         1.0128521350438369,
@@ -16,6 +17,7 @@
     "FD&C Blue 1": {
       "units": "mg/L",
       "led": "630",
+      "channel": 6,
       "fit_type": "polynomial",
       "fit_coef": [
         9.657673193787982,
@@ -29,6 +31,7 @@
     "Nitrate API": {
       "units": "ppm",
       "led": "520",
+      "channel": 6,
       "fit_type": "polynomial",
       "fit_coef": [
         0.32039213453320625,
@@ -43,6 +46,7 @@
     "Nitrite API": {
       "units": "ppm",
       "led": "520",
+      "channel": 5,
       "fit_type": "polynomial",
       "fit_coef": [
         0.13111937060865314,
