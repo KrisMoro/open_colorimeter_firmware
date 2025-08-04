@@ -1,42 +1,28 @@
 import busio
 import board
-import adafruit_tsl2591
-
+import constants
+import adafruit_as7341
+import ulab
+from collections import OrderedDict
 
 class LightSensor:
 
-    TSL2591_MAX_COUNT_100MS = 36863  # 0x8FFF
-    TSL2591_MAX_COUNT = 65535        # 0xFFFF
-
-    DEFAULT_GAIN = adafruit_tsl2591.GAIN_MED
-    DEFAULT_INTEGRATION_TIME = adafruit_tsl2591.INTEGRATIONTIME_500MS
+    NUM_CHAN = 10
+    DEFAULT_GAIN = constants.STR_TO_GAIN['16x']
+    CHANNEL_NAMES = [k for k in constants.STR_TO_CHANNEL]
+    AS7341_MAX_COUNT = 2**16-1
 
     def __init__(self):
-
-        # Set up light sensor
         i2c = busio.I2C(board.SCL, board.SDA)
         try:
-            self._device = adafruit_tsl2591.TSL2591(i2c)
+            self._device = adafruit_as7341.AS7341(i2c)
         except ValueError as error:
             raise LightSensorIOError(error)
-        self.gain = self.DEFAULT_GAIN 
-        self.integration_time = self.DEFAULT_INTEGRATION_TIME 
-        self.channel = 0
+        self.gain = self.DEFAULT_GAIN
 
-    @property
+    @property 
     def max_counts(self):
-        if self.integration_time == adafruit_tsl2591.INTEGRATIONTIME_100MS:
-            return self.TSL2591_MAX_COUNT_100MS 
-        else:
-            return self.TSL2591_MAX_COUNT 
-
-    @property
-    def value(self):
-        value = self._device.raw_luminosity[self.channel]
-        if value >= self.max_counts:
-            raise LightSensorOverflow('light sensor reading > max_counts')
-        #print(value)
-        return value
+        return self.AS7341_MAX_COUNT
 
     @property
     def gain(self):
@@ -48,13 +34,28 @@ class LightSensor:
         self._device.gain = value
 
     @property
-    def integration_time(self):
-        return self._integration_time
+    def values_as_dict(self):
+        values_dict = OrderedDict()
+        values = self.raw_values
+        for name, value in zip(self.CHANNEL_NAMES, values):
+            values_dict[name] = value
+        return values_dict
 
-    @integration_time.setter
-    def integration_time(self, value):
-        self._integration_time = value
-        self._device.integration_time = value
+    @property
+    def raw_values(self):
+        values = list(self._device.all_channels)
+        values.append(self._device.channel_nir)
+        values.append(self._device.channel_clear)
+        return values
+
+    def raw_channel(self, channel):
+        if channel >= constants.NUM_CHANNEL:
+            raise ValueError('channel out of range') 
+        value = self.raw_values[channel]
+        if value >= self.max_counts:
+            raise LightSensorOverflow('light sensor reading > max_counts')
+        return value
+
 
 
 class LightSensorOverflow(Exception):

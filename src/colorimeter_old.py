@@ -1,12 +1,13 @@
-import gc
 import time
 import ulab
 import board
 import analogio
 import digitalio
 from keypad import ShiftRegisterKeys
-import constants
+import constants_2591
 import adafruit_itertools
+import neopixel
+import collections
 
 from light_sensor import LightSensor
 from light_sensor import LightSensorOverflow
@@ -22,10 +23,7 @@ from calibrations import CalibrationsError
 
 from menu_screen import MenuScreen
 from message_screen import MessageScreen
-from multi_measure_screen import MultiMeasureScreen
-
-from messaging import MessageReceiver
-from messaging import send_message
+from measure_screen import MeasureScreen
 
 class Mode:
     MEASURE = 0
@@ -43,19 +41,24 @@ class Colorimeter:
 
     def __init__(self):
 
-        self.menu_screen = None
-        self.message_screen = None
-        self.measure_screen = None
-        self.mode = Mode.MEASURE
-        board.DISPLAY.brightness = 1.0
-
         self.menu_items = list(self.DEFAULT_MEASUREMENTS)
         self.menu_view_pos = 0
         self.menu_item_pos = 0
+        self.mode = Mode.MEASURE
         self.is_blanked = False
-        self.blank_values = ulab.numpy.ones((constants.NUM_CHANNEL,)) 
+        self.blank_values = collections.OrderedDict([
+            ("all", 1.0),
+            ("red", 1.0),
+            ("green", 1.0),
+            ("blue", 1.0)
+        ])
 
 
+        # Create screens
+        board.DISPLAY.brightness = 1.0
+        self.measure_screen = MeasureScreen()
+        self.message_screen = MessageScreen()
+        self.menu_screen = MenuScreen()
 
         # Setup gamepad inputs - change this (Keypad shift??)
         self.last_button_press = time.monotonic()
@@ -66,7 +69,20 @@ class Colorimeter:
                 key_count=8,
                 value_when_pressed=True
                 )
+        
+        #init neopixel
+        self.num_pixels = 5
+        self.pixels = neopixel.NeoPixel(board.NEOPIXEL, self.num_pixels, brightness=0.5, auto_write=True)
+        self.pixels.brightness = 0.1
 
+
+        #setup light source
+        #soutces will be "all", "red", "green", "blue"
+        self.light = "all"
+        self.light_sources = {}
+        self.init_light_sources()   
+        self.activate_light_source(self.light)
+        
         # Load Configuration
         self.configuration = Configuration()
         try:
@@ -119,46 +135,55 @@ class Colorimeter:
         else:
             if self.configuration.gain is not None:
                 self.light_sensor.gain = self.configuration.gain
+            if self.configuration.integration_time is not None:
+                self.light_sensor.integration_time = self.configuration.integration_time
             self.blank_sensor(set_blanked=False)
+            self.measure_screen.set_not_blanked()
 
         # Setup up battery monitoring settings cycles 
         self.battery_monitor = BatteryMonitor()
-        self.setup_menu_cycles()
+        self.setup_gain_and_itime_cycles()
+        
 
-        # Setup message receiver
-        self.message_receiver = MessageReceiver()
-
-    def setup_menu_cycles(self):
-        self.gain_cycle = adafruit_itertools.cycle(constants.GAIN_TO_STR) 
+    def setup_gain_and_itime_cycles(self):
+        self.gain_cycle = adafruit_itertools.cycle(constants_2591.GAIN_TO_STR) 
         if self.configuration.gain is not None:
             while next(self.gain_cycle) != self.configuration.gain: 
                 continue
 
-    @property
-    def mode(self):
-        return self._mode
+        self.itime_cycle = adafruit_itertools.cycle(constants_2591.INTEGRATION_TIME_TO_STR)
+        if self.configuration.integration_time is not None:
+            while next(self.itime_cycle) != self.configuration.integration_time:
+                continue
 
-    @mode.setter
-    def mode(self, new_mode):
-        self.delete_screens()
-        if new_mode == Mode.MEASURE:
-            self.measure_screen = MultiMeasureScreen()
-        elif new_mode in (Mode.MESSAGE, Mode.ABORT):
-            self.message_screen = MessageScreen()
-        elif new_mode == Mode.MENU:
-            self.menu_screen = MenuScreen()
-            self.menu_view_pos = 0
-            self.menu_item_pos = 0
-            self.update_menu_screen()
-        gc.collect()  # Mostly to free memory after menu update
-        self._mode = new_mode
+    def init_light_sources(self):
+        for source in constants_2591.LIGHT_SOURCE:
+                self.light_sources[source] = digitalio.DigitalInOut(constants_2591.LIGHT_SOURCE[source])
+                self.light_sources[source].direction = digitalio.Direction.OUTPUT
+                self.light_sources[source].value = False
 
-    def delete_screens(self):
-        self.message_screen = None 
-        self.measure_screen = None 
-        self.menu_screen = None 
-        gc.collect()  
-
+    def activate_light_source(self, source_requested:str):
+        print("Light source requested:", source_requested)
+        for source in constants_2591.LIGHT_SOURCE:
+                self.light_sources[source].value = False
+        if source_requested == "all":
+            for source in constants_2591.LIGHT_SOURCE:
+                self.light_sources[source].value = True
+        else:
+            self.light_sources[source_requested].value = True
+        self.pixels[2] = constants_2591.NEOPIXEL_COLORS[source_requested]
+    
+    def activate_next_light_source(self):
+        if self.light == "all":
+            self.light = "red"
+        elif self.light == "red":
+            self.light = "green"
+        elif self.light == "green":
+            self.light = "blue"
+        elif self.light == "blue":
+            self.light = "all"
+        self.activate_light_source(self.light)
+    
     @property
     def num_menu_items(self):
         return len(self.menu_items)
@@ -177,25 +202,15 @@ class Colorimeter:
             self.menu_view_pos -= 1
 
     def update_menu_screen(self):
-        if self.menu_screen is None:
-            return 
         n0 = self.menu_view_pos
         n1 = n0 + self.menu_screen.items_per_screen
         view_items = []
         for i, item in enumerate(self.menu_items[n0:n1]):
             led = self.calibrations.led(item)
-            chan = self.calibrations.channel(item)
-            if led is None and chan is None:
+            if led is None:
                 item_text = f'{n0+i} {item}' 
-            elif chan is None:
-                item_text = f'{n0+i} {item} ({led})' 
-            elif led is None:
-                chan_str = constants.CHANNEL_TO_STR[chan]
-                item_text = f'{n0+i} {item} ({chan_str})' 
             else:
-                chan_str = constants.CHANNEL_TO_STR[chan]
-                item = item[:8]
-                item_text = f'{n0+i} {item} ({led},{chan_str})' 
+                item_text = f'{n0+i} {item} ({led})' 
             view_items.append(item_text)
         self.menu_screen.set_menu_items(view_items)
         pos = self.menu_item_pos - self.menu_view_pos
@@ -214,14 +229,6 @@ class Colorimeter:
         return self.measurement_name == self.RAW_SENSOR_STR
 
     @property
-    def is_calibrated_measurement(self):
-        test = True
-        test &= (not self.is_absorbance) 
-        test &= (not self.is_transmittance) 
-        test &= (not self.is_raw_sensor) 
-        return test
-
-    @property
     def measurement_units(self):
         if self.measurement_name in self.DEFAULT_MEASUREMENTS: 
             units = None 
@@ -230,88 +237,56 @@ class Colorimeter:
         return units
 
     @property
-    def raw_sensor_values(self):
-        return self.light_sensor.raw_values
+    def raw_sensor_value(self):
+        return self.light_sensor.value
 
     @property
-    def transmittances(self):
-        transmittances = self.raw_sensor_values/self.blank_values
-        mask = transmittances > 1.0
-        transmittances[mask] = 1.0
-        return transmittances
+    def transmittance(self):
+        transmittance = float(self.raw_sensor_value)/self.blank_values[self.light]
+        return transmittance
 
     @property
-    def absorbances(self):
-        absorbances = -ulab.numpy.log10(self.transmittances)
-        mask = absorbances < 0.0
-        absorbances[mask] = 0.0
-        return absorbances
+    def absorbance(self):
+        absorbance = -ulab.numpy.log10(self.transmittance)
+        absorbance = absorbance if absorbance > 0.0 else 0.0
+        return absorbance
 
     @property
-    def measurement_values(self):
+    def measurement_value(self):
         if self.is_absorbance: 
-            values = self.absorbances
+            value = self.absorbance
         elif self.is_transmittance:
-            values = self.transmittances
+            value = self.transmittance
         elif self.is_raw_sensor:
-            values = self.raw_sensor_values
-        elif self.is_calibrated_measurement:
-            error_message = 'calibrated measurement not implemented'
-            self.message_screen.set_message(error_message)
-            self.message_screen.set_to_error()
-            self.measurement_name = 'Absorbance'
-            self.mode = Mode.MESSAGE
-        return values
-
+            value = self.raw_sensor_value
+        else:
+            try:
+                value = self.calibrations.apply( 
+                        self.measurement_name, 
+                        self.absorbance
+                        )
+            except CalibrationsError as error:
+                self.message_screen.set_message(error_message)
+                self.message_screen.set_to_error()
+                self.measurement_name = 'Absorbance'
+                self.mode = Mode.MESSAGE
+        return value
 
     def blank_sensor(self, set_blanked=True):
-        num_samp = constants.NUM_BLANK_SAMPLES
-        num_chan = constants.NUM_CHANNEL
-        blank_samples = ulab.numpy.zeros((num_samp, num_chan))
-        for i in range(num_samp):
-            try:
-                values =  self.light_sensor.raw_values
-            except LightSensorOverflow:
-                value = self.light_sensor.max_counts
-            blank_samples[i,:] = values
-            time.sleep(constants.BLANK_DT)
-        self.blank_values = ulab.numpy.median(blank_samples,axis=0)
-        self.blank_values = ulab.numpy.where(self.blank_values>0, self.blank_values, 1.0)
-        if set_blanked:
-            self.is_blanked = True
+        for source in constants_2591.NEOPIXEL_COLORS:
+            self.activate_light_source(source)
+            blank_samples = ulab.numpy.zeros((constants_2591.NUM_BLANK_SAMPLES,))
+            for i in range(constants_2591.NUM_BLANK_SAMPLES):
+                try:
+                    value = self.raw_sensor_value
+                except LightSensorOverflow:
+                    value = self.light_sensor.max_counts
+                blank_samples[i] = value
+                time.sleep(constants_2591.BLANK_DT)
+            self.blank_values[source] = ulab.numpy.median(blank_samples)
+            if set_blanked:
+                self.is_blanked = True
 
-    def blank_button_pressed(self, buttons):  
-        if self.is_raw_sensor:
-            return False
-        else:
-            return buttons & constants.BUTTON['blank']
-
-    def menu_button_pressed(self, buttons): 
-        return buttons & constants.BUTTON['menu']
-
-    def up_button_pressed(self, buttons):
-        return buttons & constants.BUTTON['up']
-
-    def down_button_pressed(self, buttons):
-        return buttons & constants.BUTTON['down']
-
-    def right_button_pressed(self, buttons):
-        return buttons & constants.BUTTON['right']
-
-    def channel_button_pressed(self, buttons):
-        return buttons & constants.BUTTON['left']
-
-    def gain_button_pressed(self, buttons):
-        if self.is_raw_sensor:
-            return buttons & constants.BUTTON['gain']
-        else:
-            return False
-
-    def itime_button_pressed(self, buttons):
-        if self.is_raw_sensor:
-            return buttons & constants.BUTTON['itime']
-        else:
-            return False
 
     def handle_button_press(self):
         buttons = self.pad.events.get()
@@ -326,35 +301,35 @@ class Colorimeter:
 
             # Update state of system based on buttons pressed.
             # This is different for each operating mode. 
-            if buttons.key_number == constants.BUTTON_LEFT:
+            if buttons.key_number == constants_2591.BUTTON_LEFT:
                 self.activate_next_light_source()
             if self.mode == Mode.MEASURE:
-                if buttons.key_number == constants.BUTTON_BLANK:
+                if buttons.key_number == constants_2591.BUTTON_BLANK:
                     self.measure_screen.set_blanking()
                     self.blank_sensor()
-                elif buttons.key_number == constants.BUTTON_MENU:
+                elif buttons.key_number == constants_2591.BUTTON_MENU:
                     self.mode = Mode.MENU
                     self.menu_view_pos = 0
                     self.menu_item_pos = 0
                     self.update_menu_screen()
-                elif buttons.key_number == constants.BUTTON_GAIN:
+                elif buttons.key_number == constants_2591.BUTTON_GAIN:
                     self.light_sensor.gain = next(self.gain_cycle)
                     self.is_blanked = False
-                elif buttons.key_number == constants.BUTTON_ITIME:
+                elif buttons.key_number == constants_2591.BUTTON_ITIME:
                     self.light_sensor.integration_time = next(self.itime_cycle)
                     self.is_blanked = False
 
             elif self.mode == Mode.MENU:
-                if buttons.key_number == constants.BUTTON_MENU:
+                if buttons.key_number == constants_2591.BUTTON_MENU:
                     self.mode = Mode.MEASURE
-                elif buttons.key_number == constants.BUTTON_UP: 
+                elif buttons.key_number == constants_2591.BUTTON_UP: 
                     self.decr_menu_item_pos()
-                elif buttons.key_number == constants.BUTTON_DOWN: 
+                elif buttons.key_number == constants_2591.BUTTON_DOWN: 
                     self.incr_menu_item_pos()
-                elif buttons.key_number == constants.BUTTON_RIGHT: 
+                elif buttons.key_number == constants_2591.BUTTON_RIGHT: 
                     selected_item = self.menu_items[self.menu_item_pos]
                     if selected_item == self.ABOUT_STR:
-                        about_msg = f'firmware version {constants.__version__}'
+                        about_msg = f'firmware version {constants_2591.__version__}'
                         self.message_screen.set_message(about_msg) 
                         self.message_screen.set_to_about()
                         self.mode = Mode.MESSAGE
@@ -372,69 +347,57 @@ class Colorimeter:
                 else:
                     self.mode = Mode.MEASURE
 
-
     def check_debounce(self):
         button_dt = time.monotonic() - self.last_button_press
-        if button_dt < constants.DEBOUNCE_DT: 
+        if button_dt < constants_2591.DEBOUNCE_DT: 
             return False
         else:
             return True
-
-    def handle_serial_command(self): 
-        msg = self.message_receiver.update()
-        if msg:
-            try:
-                cmd = msg['command']
-            except KeyError:
-                rsp = {'command': 'missing'}
-            else:
-                rsp = {'command': cmd, 'response': {}}
-                if cmd == 'read':
-                    rsp['response']['values'] = self.light_sensor.values_as_dict
-                    if self.is_blanked:
-                        rsp['response']['blanks'] = {}
-                        for name, chan in constants.STR_TO_CHANNEL.items():
-                            rsp['response']['blanks'][name] = self.blank_values[chan]
-                else:
-                    rsp['response']['error'] = 'unknown command'
-            send_message(rsp)
-
+   
     def run(self):
-
+        self.pad.events.clear()
         while True:
-            # Deal with any incomming serial commands
-            self.handle_serial_command()
 
             # Deal with any button presses
             self.handle_button_press()
+            #TODO: Fix this with info from https://github.com/adafruit/Adafruit_Learning_System_Guides/blob/main/PyGamer_Improved_Thermal_Camera/code.py
+            
 
             # Update display based on the current operating mode
             if self.mode == Mode.MEASURE:
-                # Get measurement and display result on measurment screen
+
+                # Get measurement and result to measurment screen
                 try:
                     self.measure_screen.set_measurement(
                             self.measurement_name, 
                             self.measurement_units, 
-                            self.measurement_values,
-                            self.light_sensor.CHANNEL_NAMES,
-                            self.configuration.precision,
+                            self.measurement_value,
+                            self.configuration.precision
                             )
                 except LightSensorOverflow:
                     self.measure_screen.set_overflow(self.measurement_name)
 
-                # Update battery status
+                # Display whether or not we have blanking data. Not relevant
+                # when device is displaying raw sensor data
+                if self.is_raw_sensor:
+                    self.measure_screen.set_blanked()
+                    gain = self.light_sensor.gain
+                    itime = self.light_sensor.integration_time
+                    self.measure_screen.set_gain(gain)
+                    self.measure_screen.set_integration_time(itime)
+                else:
+                    if self.is_blanked:
+                        self.measure_screen.set_blanked()
+                    else:
+                        self.measure_screen.set_not_blanked()
+                    self.measure_screen.clear_gain()
+                    self.measure_screen.clear_integration_time()
+
+                # Update and display measurement of battery voltage
                 self.battery_monitor.update()
                 battery_voltage = self.battery_monitor.voltage_lowpass
-                self.measure_screen.set_battery(battery_voltage)
+                self.measure_screen.set_bat(battery_voltage)
 
-                # Update blanked status, 
-                if self.is_blanked:
-                    self.measure_screen.set_blanked()
-                else:
-                    self.measure_screen.set_not_blanked()
-
-                # Display current sensor gain
-                self.measure_screen.set_gain(self.light_sensor.gain)
                 self.measure_screen.show()
 
             elif self.mode == Mode.MENU:
@@ -443,8 +406,7 @@ class Colorimeter:
             elif self.mode in (Mode.MESSAGE, Mode.ABORT):
                 self.message_screen.show()
 
-            gc.collect()
-            time.sleep(constants.LOOP_DT)
+            time.sleep(constants_2591.LOOP_DT)
 
 
 

@@ -1,6 +1,6 @@
 import board
 import displayio
-import constants
+import constants_2591
 import fonts
 from adafruit_display_text import label
 from adafruit_display_text import wrap_text_to_lines 
@@ -17,16 +17,16 @@ class MessageScreen:
     def __init__(self):
 
         # Setup color palette
-        self.color_to_index = {k:i for (i,k) in enumerate(constants.COLOR_TO_RGB)}
-        self.palette = displayio.Palette(len(constants.COLOR_TO_RGB))
-        for i, palette_tuple in enumerate(constants.COLOR_TO_RGB.items()):
+        self.color_to_index = {k:i for (i,k) in enumerate(constants_2591.COLOR_TO_RGB)}
+        self.palette = displayio.Palette(len(constants_2591.COLOR_TO_RGB))
+        for i, palette_tuple in enumerate(constants_2591.COLOR_TO_RGB.items()):
             self.palette[i] = palette_tuple[1]   
 
         # Create tile grid
         self.bitmap = displayio.Bitmap( 
                 board.DISPLAY.width, 
                 board.DISPLAY.height, 
-                len(constants.COLOR_TO_RGB)
+                len(constants_2591.COLOR_TO_RGB)
                 )
         self.bitmap.fill(self.color_to_index['black'])
         self.tile_grid = displayio.TileGrid(self.bitmap,pixel_shader=self.palette)
@@ -34,7 +34,7 @@ class MessageScreen:
 
         # Create header label
         header_str = 'MESSAGE'
-        text_color = constants.COLOR_TO_RGB['white']
+        text_color = constants_2591.COLOR_TO_RGB['white']
         self.header_label = label.Label(
                 fonts.font_10pt, 
                 text = header_str, 
@@ -52,7 +52,7 @@ class MessageScreen:
         message_label_y = header_label_y + self.SPACING_MESSAGE_LABEL
         for i in range(self.NUM_MESSAGE_LABEL): 
             message_str = ' '*self.MESSAGE_MAX_CHARS
-            text_color = constants.COLOR_TO_RGB['orange']
+            text_color = constants_2591.COLOR_TO_RGB['orange']
             message_label = label.Label(
                     fonts.font_10pt, 
                     text = message_str, 

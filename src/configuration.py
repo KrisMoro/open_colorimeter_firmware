@@ -25,27 +25,27 @@ class Configuration(JsonSettingsFile):
             gain_str = self.data['gain']
         except KeyError:
             error_msg = f'{self.FILE_TYPE} missing gain'
-            error_dict['gain'] = error_msg
+            self.error_dict['gain'] = error_msg
         else:
             try:
                 gain = constants.STR_TO_GAIN[gain_str]
             except KeyError:
                 error_msg = f'{self.FILE_TYPE} unknown gain {gain_str}'
-                error_dict['gain'] = error_msg
+                self.error_dict['gain'] = error_msg
 
         # Check integration time
         try:
             itime_str = self.data['integration_time']
         except KeyError:
             error_msg = f'{self.FILE_TYPE} missing integration time'
-            error_dict['integration_time'] = error_msg
+            self.error_dict['integration_time'] = error_msg
         else:
 
             try:
                 itime = constants.STR_TO_INTEGRATION_TIME[itime_str]
             except KeyError:
                 error_msg = f'{self.FILE_TYPE} unknown integration time {itime_str}'
-                error_dict['integration_time'] = error_msg
+                self.error_dict['integration_time'] = error_msg
 
         # Remove configurations with errors
         for name in self.error_dict:
@@ -60,7 +60,7 @@ class Configuration(JsonSettingsFile):
         else:
             if not precision in self.ALLOWED_PRECISION:
                 error_msg = f'precision must be in{self.ALLOWED_PRECISION}'
-                error_dict['precision'] = error_msg
+                self.error_dict['precision'] = error_msg
 
     @property
     def integration_time(self):
@@ -89,9 +89,3 @@ class Configuration(JsonSettingsFile):
     @property
     def precision(self):
         return self.data['precision']
-
-
-
-            
-            
-    

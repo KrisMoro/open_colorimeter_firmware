@@ -1,11 +1,11 @@
 import board
 import displayio
-import constants
+import constants_2591
 
 class SplashScreen:
 
     def __init__(self):
-        filename = f'{constants.SPLASHSCREEN_BMP}'
+        filename = f'{constants_2591.SPLASHSCREEN_BMP}'
         self.bitmap = displayio.OnDiskBitmap(filename)
         self.tile_grid = displayio.TileGrid(
                 self.bitmap, 
