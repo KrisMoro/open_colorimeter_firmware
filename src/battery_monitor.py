@@ -1,5 +1,5 @@
 import analogio
-import constants_2591
+import constants
 import ulab.numpy as np
 
 class BatteryMonitor:
@@ -8,7 +8,7 @@ class BatteryMonitor:
     FREQ_CUTOFF = 0.02
 
     def __init__(self):
-        self.battery_ain = analogio.AnalogIn(constants_2591.BATTERY_AIN_PIN) 
+        self.battery_ain = analogio.AnalogIn(constants.BATTERY_AIN_PIN) 
         self.lowpass = None
 
     def update(self):
@@ -21,7 +21,7 @@ class BatteryMonitor:
             self.lowpass = LowpassFilter(
                     freq_cutoff = self.FREQ_CUTOFF, 
                     value = self.voltage_raw,  
-                    dt = constants_2591.LOOP_DT
+                    dt = constants.LOOP_DT
                     )
         else:
             # Update filter on new reading

@@ -1,6 +1,6 @@
 import board
 import displayio
-import constants_2591
+import constants
 import fonts
 from adafruit_display_text import label
 
@@ -19,16 +19,16 @@ class MeasureScreen:
     def __init__(self):
 
         # Setup color palette
-        self.color_to_index = {k:i for (i,k) in enumerate(constants_2591.COLOR_TO_RGB)}
-        self.palette = displayio.Palette(len(constants_2591.COLOR_TO_RGB))
-        for i, palette_tuple in enumerate(constants_2591.COLOR_TO_RGB.items()):
+        self.color_to_index = {k:i for (i,k) in enumerate(constants.COLOR_TO_RGB)}
+        self.palette = displayio.Palette(len(constants.COLOR_TO_RGB))
+        for i, palette_tuple in enumerate(constants.COLOR_TO_RGB.items()):
             self.palette[i] = palette_tuple[1]   
 
         # Create tile grid
         self.bitmap = displayio.Bitmap( 
                 board.DISPLAY.width, 
                 board.DISPLAY.height, 
-                len(constants_2591.COLOR_TO_RGB)
+                len(constants.COLOR_TO_RGB)
                 )
         self.bitmap.fill(self.color_to_index['black'])
         self.tile_grid = displayio.TileGrid(self.bitmap,pixel_shader=self.palette)
@@ -36,7 +36,7 @@ class MeasureScreen:
 
         # Create header text label
         header_str = 'Absorbance'
-        text_color = constants_2591.COLOR_TO_RGB['white']
+        text_color = constants.COLOR_TO_RGB['white']
         self.header_label = label.Label(
                 fonts.font_10pt, 
                 text = header_str, 
@@ -52,7 +52,7 @@ class MeasureScreen:
         # Create absorbance value text label
         dummy_value = 0.0
         value_str = f'{dummy_value:1.2f}'.replace('0','O')
-        text_color = constants_2591.COLOR_TO_RGB['white']
+        text_color = constants.COLOR_TO_RGB['white']
         self.value_label = label.Label(
                 fonts.font_10pt, 
                 text = value_str, 
@@ -68,7 +68,7 @@ class MeasureScreen:
         # Create text label for blanking info
         # Note: not shown when gain and time labels are shown
         blank_str = 'initializing' 
-        text_color = constants_2591.COLOR_TO_RGB['orange']
+        text_color = constants.COLOR_TO_RGB['orange']
         self.blank_label = label.Label(
                 fonts.font_10pt, 
                 text=blank_str, 
@@ -84,7 +84,7 @@ class MeasureScreen:
         # Create text label for gain information
         # Note: not shown when blanking label is shown
         gain_str = 'gain xxx' 
-        text_color = constants_2591.COLOR_TO_RGB['orange']
+        text_color = constants.COLOR_TO_RGB['orange']
         self.gain_label = label.Label(
                 fonts.font_10pt, 
                 text=gain_str, 
@@ -101,7 +101,7 @@ class MeasureScreen:
         # Create text label for integration time information
         # Note: not shown when blanking label is shown
         itime_str = 'time xxxms' 
-        text_color = constants_2591.COLOR_TO_RGB['orange']
+        text_color = constants.COLOR_TO_RGB['orange']
         self.itime_label = label.Label(
                 fonts.font_10pt, 
                 text=itime_str, 
@@ -119,7 +119,7 @@ class MeasureScreen:
         # Create integration time/window text label
         #bat_str = 'battery 100%'
         bat_str = 'battery 0.0V'
-        text_color = constants_2591.COLOR_TO_RGB['gray']
+        text_color = constants.COLOR_TO_RGB['gray']
         self.bat_label = label.Label(
                 fonts.font_10pt, 
                 text = bat_str, 
@@ -144,7 +144,7 @@ class MeasureScreen:
 
     def set_measurement(self, name, units, value, precision):
         if value is None:
-            self.value_label.color = constants_2591.COLOR_TO_RGB['orange']
+            self.value_label.color = constants.COLOR_TO_RGB['orange']
             self.value_label.text = 'range error' 
         else:
             if units is None:
@@ -157,12 +157,12 @@ class MeasureScreen:
                 self.header_label.text = name
                 label_text = f'{value:1.{precision}f} {units}'
             self.value_label.text = label_text.replace('0','O')
-            self.value_label.color = constants_2591.COLOR_TO_RGB['white']
+            self.value_label.color = constants.COLOR_TO_RGB['white']
 
     def set_overflow(self, name):
         self.header_label.text = name
         self.value_label.text = 'overflow' 
-        self.value_label.color = constants_2591.COLOR_TO_RGB['red']
+        self.value_label.color = constants.COLOR_TO_RGB['red']
 
     def set_not_blanked(self):
         self.blank_label.text = ' not blanked'
@@ -175,7 +175,7 @@ class MeasureScreen:
 
     def set_gain(self,value):
         if value is not None:
-            value_str = constants_2591.GAIN_TO_STR[value]
+            value_str = constants.GAIN_TO_STR[value]
             self.gain_label.text = f'gain={value_str}'
         else:
             self.gain_label.text = ''
@@ -185,7 +185,7 @@ class MeasureScreen:
 
     def set_integration_time(self,value):
         if value is not None:
-            value_str = constants_2591.INTEGRATION_TIME_TO_STR[value]
+            value_str = constants.INTEGRATION_TIME_TO_STR[value]
             self.itime_label.text = f'time={value_str}'
         else:
             self.itime_label.text = ''

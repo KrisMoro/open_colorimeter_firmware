@@ -327,7 +327,7 @@ class Colorimeter:
             # Update state of system based on buttons pressed.
             # This is different for each operating mode. 
             if buttons.key_number == constants.BUTTON_LEFT:
-                self.activate_next_light_source()
+                pass
             if self.mode == Mode.MEASURE:
                 if buttons.key_number == constants.BUTTON_BLANK:
                     self.measure_screen.set_blanking()

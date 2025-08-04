@@ -4,7 +4,7 @@ import board
 import analogio
 import digitalio
 from keypad import ShiftRegisterKeys
-import constants_2591
+import constants
 import adafruit_itertools
 import neopixel
 import collections
@@ -146,32 +146,32 @@ class Colorimeter:
         
 
     def setup_gain_and_itime_cycles(self):
-        self.gain_cycle = adafruit_itertools.cycle(constants_2591.GAIN_TO_STR) 
+        self.gain_cycle = adafruit_itertools.cycle(constants.GAIN_TO_STR) 
         if self.configuration.gain is not None:
             while next(self.gain_cycle) != self.configuration.gain: 
                 continue
 
-        self.itime_cycle = adafruit_itertools.cycle(constants_2591.INTEGRATION_TIME_TO_STR)
+        self.itime_cycle = adafruit_itertools.cycle(constants.INTEGRATION_TIME_TO_STR)
         if self.configuration.integration_time is not None:
             while next(self.itime_cycle) != self.configuration.integration_time:
                 continue
 
     def init_light_sources(self):
-        for source in constants_2591.LIGHT_SOURCE:
-                self.light_sources[source] = digitalio.DigitalInOut(constants_2591.LIGHT_SOURCE[source])
+        for source in constants.LIGHT_SOURCE:
+                self.light_sources[source] = digitalio.DigitalInOut(constants.LIGHT_SOURCE[source])
                 self.light_sources[source].direction = digitalio.Direction.OUTPUT
                 self.light_sources[source].value = False
 
     def activate_light_source(self, source_requested:str):
         print("Light source requested:", source_requested)
-        for source in constants_2591.LIGHT_SOURCE:
+        for source in constants.LIGHT_SOURCE:
                 self.light_sources[source].value = False
         if source_requested == "all":
-            for source in constants_2591.LIGHT_SOURCE:
+            for source in constants.LIGHT_SOURCE:
                 self.light_sources[source].value = True
         else:
             self.light_sources[source_requested].value = True
-        self.pixels[2] = constants_2591.NEOPIXEL_COLORS[source_requested]
+        self.pixels[2] = constants.NEOPIXEL_COLORS[source_requested]
     
     def activate_next_light_source(self):
         if self.light == "all":
@@ -273,16 +273,16 @@ class Colorimeter:
         return value
 
     def blank_sensor(self, set_blanked=True):
-        for source in constants_2591.NEOPIXEL_COLORS:
+        for source in constants.NEOPIXEL_COLORS:
             self.activate_light_source(source)
-            blank_samples = ulab.numpy.zeros((constants_2591.NUM_BLANK_SAMPLES,))
-            for i in range(constants_2591.NUM_BLANK_SAMPLES):
+            blank_samples = ulab.numpy.zeros((constants.NUM_BLANK_SAMPLES,))
+            for i in range(constants.NUM_BLANK_SAMPLES):
                 try:
                     value = self.raw_sensor_value
                 except LightSensorOverflow:
                     value = self.light_sensor.max_counts
                 blank_samples[i] = value
-                time.sleep(constants_2591.BLANK_DT)
+                time.sleep(constants.BLANK_DT)
             self.blank_values[source] = ulab.numpy.median(blank_samples)
             if set_blanked:
                 self.is_blanked = True
@@ -301,35 +301,35 @@ class Colorimeter:
 
             # Update state of system based on buttons pressed.
             # This is different for each operating mode. 
-            if buttons.key_number == constants_2591.BUTTON_LEFT:
+            if buttons.key_number == constants.BUTTON_LEFT:
                 self.activate_next_light_source()
             if self.mode == Mode.MEASURE:
-                if buttons.key_number == constants_2591.BUTTON_BLANK:
+                if buttons.key_number == constants.BUTTON_BLANK:
                     self.measure_screen.set_blanking()
                     self.blank_sensor()
-                elif buttons.key_number == constants_2591.BUTTON_MENU:
+                elif buttons.key_number == constants.BUTTON_MENU:
                     self.mode = Mode.MENU
                     self.menu_view_pos = 0
                     self.menu_item_pos = 0
                     self.update_menu_screen()
-                elif buttons.key_number == constants_2591.BUTTON_GAIN:
+                elif buttons.key_number == constants.BUTTON_GAIN:
                     self.light_sensor.gain = next(self.gain_cycle)
                     self.is_blanked = False
-                elif buttons.key_number == constants_2591.BUTTON_ITIME:
+                elif buttons.key_number == constants.BUTTON_ITIME:
                     self.light_sensor.integration_time = next(self.itime_cycle)
                     self.is_blanked = False
 
             elif self.mode == Mode.MENU:
-                if buttons.key_number == constants_2591.BUTTON_MENU:
+                if buttons.key_number == constants.BUTTON_MENU:
                     self.mode = Mode.MEASURE
-                elif buttons.key_number == constants_2591.BUTTON_UP: 
+                elif buttons.key_number == constants.BUTTON_UP: 
                     self.decr_menu_item_pos()
-                elif buttons.key_number == constants_2591.BUTTON_DOWN: 
+                elif buttons.key_number == constants.BUTTON_DOWN: 
                     self.incr_menu_item_pos()
-                elif buttons.key_number == constants_2591.BUTTON_RIGHT: 
+                elif buttons.key_number == constants.BUTTON_RIGHT: 
                     selected_item = self.menu_items[self.menu_item_pos]
                     if selected_item == self.ABOUT_STR:
-                        about_msg = f'firmware version {constants_2591.__version__}'
+                        about_msg = f'firmware version {constants.__version__}'
                         self.message_screen.set_message(about_msg) 
                         self.message_screen.set_to_about()
                         self.mode = Mode.MESSAGE
@@ -349,7 +349,7 @@ class Colorimeter:
 
     def check_debounce(self):
         button_dt = time.monotonic() - self.last_button_press
-        if button_dt < constants_2591.DEBOUNCE_DT: 
+        if button_dt < constants.DEBOUNCE_DT: 
             return False
         else:
             return True
@@ -406,7 +406,7 @@ class Colorimeter:
             elif self.mode in (Mode.MESSAGE, Mode.ABORT):
                 self.message_screen.show()
 
-            time.sleep(constants_2591.LOOP_DT)
+            time.sleep(constants.LOOP_DT)
 
 
 

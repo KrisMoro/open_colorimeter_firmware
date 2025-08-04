@@ -1,7 +1,7 @@
 import board
 import displayio
 #import terminalio
-import constants_2591
+import constants
 import fonts
 from adafruit_display_text import label
 from adafruit_display_shapes import line 
@@ -15,16 +15,16 @@ class MenuScreen:
         self.group = displayio.Group()
 
         # Setup color palette
-        self.color_to_index = {k:i for (i,k) in enumerate(constants_2591.COLOR_TO_RGB)}
-        self.palette = displayio.Palette(len(constants_2591.COLOR_TO_RGB))
-        for i, palette_tuple in enumerate(constants_2591.COLOR_TO_RGB.items()):
+        self.color_to_index = {k:i for (i,k) in enumerate(constants.COLOR_TO_RGB)}
+        self.palette = displayio.Palette(len(constants.COLOR_TO_RGB))
+        for i, palette_tuple in enumerate(constants.COLOR_TO_RGB.items()):
             self.palette[i] = palette_tuple[1]   
 
         # Create tile grid
         self.bitmap = displayio.Bitmap( 
                 board.DISPLAY.width, 
                 board.DISPLAY.height, 
-                len(constants_2591.COLOR_TO_RGB)
+                len(constants.COLOR_TO_RGB)
                 )
         self.bitmap.fill(self.color_to_index['black'])
         self.tile_grid = displayio.TileGrid(self.bitmap,pixel_shader=self.palette)
@@ -35,7 +35,7 @@ class MenuScreen:
         self.header_label = label.Label(
                 fonts.font_10pt, 
                 text = header_str, 
-                color = constants_2591.COLOR_TO_RGB['white'], 
+                color = constants.COLOR_TO_RGB['white'], 
                 scale = font_scale,
                 anchor_point = (0.5, 1.0)
                 )
@@ -53,7 +53,7 @@ class MenuScreen:
                 menu_line_y0, 
                 menu_line_x1, 
                 menu_line_y1, 
-                constants_2591.COLOR_TO_RGB['gray']
+                constants.COLOR_TO_RGB['gray']
                 )
 
         # Test populate some items
@@ -69,7 +69,7 @@ class MenuScreen:
             label_tmp = label.Label(
                      fonts.font_10pt,
                      text = '',
-                     color = constants_2591.COLOR_TO_RGB['white'],
+                     color = constants.COLOR_TO_RGB['white'],
                      scale = font_scale,
                      anchor_point = (0.0, 1.0),
                      anchored_position = (pos_x, pos_y),
@@ -93,11 +93,11 @@ class MenuScreen:
     def set_curr_item(self, num):
         for i, item_label in enumerate(self.item_labels):
             if i==num:
-                item_label.color = constants_2591.COLOR_TO_RGB['black']
-                item_label.background_color = constants_2591.COLOR_TO_RGB['orange']
+                item_label.color = constants.COLOR_TO_RGB['black']
+                item_label.background_color = constants.COLOR_TO_RGB['orange']
             else:
-                item_label.color = constants_2591.COLOR_TO_RGB['white']
-                item_label.background_color = constants_2591.COLOR_TO_RGB['black']
+                item_label.color = constants.COLOR_TO_RGB['white']
+                item_label.background_color = constants.COLOR_TO_RGB['black']
 
     def show(self):
         board.DISPLAY.root_group = self.group

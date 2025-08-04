@@ -1,7 +1,7 @@
 import os
 import ulab
 import json
-import constants_2591
+import constants
 from collections import OrderedDict
 from json_settings_file import JsonSettingsFile
 
@@ -11,7 +11,7 @@ class CalibrationsError(Exception):
 class Calibrations(JsonSettingsFile):
 
     FILE_TYPE = 'calibrations'
-    FILE_NAME = constants_2591.CALIBRATIONS_FILE
+    FILE_NAME = constants.CALIBRATIONS_FILE
     LOAD_ERROR_EXCEPTION = CalibrationsError
     ALLOWED_FIT_TYPES = ['linear', 'polynomial']
 
